@@ -1,4 +1,10 @@
+# https://docs.djangoproject.com/pt-br/4.2/ref/class-based-views/
+# Function Based Views -> São funções
+# Class Based Views -> São classes (POO)
 
+from typing import Any
+
+from django.db.models.query import QuerySet
 from django.shortcuts import render
 from django.core.paginator import Paginator
 from blog.models import Post, Page
@@ -6,27 +12,54 @@ from django.db.models import Q
 from django.contrib.auth.models import User
 from django.http import Http404
 
+from django.views.generic import ListView
+
 PER_PAGE = 9
 
-def index(request):
-    # posts = Post.objects \
-    #     .filter(is_published=True) \
-    #     .order_by('-pk')
-    posts = Post.objects.get_published()
-    paginator = Paginator(posts, PER_PAGE)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    context = {
-        'page_obj': page_obj,
-        'page_title': 'Home - ',
-    }
-    return render(
-        request,
-        'blog/pages/index.html',
-        context
-    )
+class PostListView(ListView):
+    # Esses 2 foram tirados, por causa do queryset + get_published
+    # model = Post
+    # ordering = '-pk',
+    template_name = 'blog/pages/index.html'
+    # Tem que mudar essa variável que já é utilizada pelo Paginator page_obj => posts
+    # object_list == posts
+    context_object_name = 'posts' 
+    
+    paginate_by = PER_PAGE
+    queryset = Post.objects.get_published() # faz o método abaixo
+    # Se quiser sobrescrever a queryset
+    # def get_queryset(self):
+    #     queryset = super().get_queryset()
+    #     queryset = queryset.filter(is_published=True)
+    #     return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
+        context.update({
+            'page_title': 'Home - '
+        })
+        # print(context)
+        # context = {
+        #     'paginator': <django.core.paginator.Paginator object at 0x77e31c3d8050>, 
+        #     'page_obj': <Page 1 of 2>, 
+        #     'is_paginated': True, 
+        #     'object_list': <QuerySet [
+        #         <Post: Globo dobra tempo do pré-jogo>, 
+        #         <Post: Globo dobra tempo do pré-jogo>, 
+        #     ]>, 
+        #     'posts': <QuerySet [
+        #         <Post: Globo dobra tempo do pré-jogo>, 
+        #         <Post: Globo dobra tempo do pré-jogo>, 
+        #     ]>, 
+        #     'view': <blog.views.views.PostListView object at 0x77e31c3d7fb0>, 
+        #     'page_title': 'Home - '
+        # }
 
+        return context
+
+class CreatedByListView(PostListView):
+    ...
 def created_by(request, author_id):
     # posts = Post.objects \
     #     .filter(is_published=True) \
