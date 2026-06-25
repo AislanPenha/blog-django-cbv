@@ -1,0 +1,5 @@
+# Esse arquivo é usado no Docker para instalar tudo que preciso
+Django>=6.0.5,<6.1
+psycopg2-binary>=2.9.12,<2.10
+Pillow>=12.2.0, <12.3
+django-summernote>=0.8.20.0,<0.8.21

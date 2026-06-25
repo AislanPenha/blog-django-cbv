@@ -1,0 +1,16 @@
+# Variáveis de ambiente
+
+SECRET_KEY="\1X,b6UHXxqEUG_.Q.],.=WS@|9E6bOeN&uj&ia{5_s.n^l%YQEs2CGJYjS:!,O"
+
+# 0 False, 1 True
+DEBUG="1"
+
+# Comma Separated values
+ALLOWED_HOSTS="127.0.0.1, localhost, 0.0.0.0"
+
+DB_ENGINE="django.db.backends.postgresql"
+POSTGRES_DB="blog_base_de_dados"
+POSTGRES_USER="blog_user"
+POSTGRES_PASSWORD="******"
+POSTGRES_HOST="psql"
+POSTGRES_PORT="5432"
