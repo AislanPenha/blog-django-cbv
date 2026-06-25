@@ -5,12 +5,12 @@
 from typing import Any
 
 from django.db.models.query import QuerySet
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.core.paginator import Paginator
 from blog.models import Post, Page
 from django.db.models import Q
 from django.contrib.auth.models import User
-from django.http import Http404
+from django.http import Http404, HttpRequest
 
 from django.views.generic import ListView
 
@@ -59,7 +59,89 @@ class PostListView(ListView):
         return context
 
 class CreatedByListView(PostListView):
-    ...
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self._temp_context: dict[str, Any] = {}
+
+    # Ordem de processamento
+    def setup(self, *args, **kwargs):
+        print('Este é o método setup')
+        return super().setup(*args, **kwargs)
+    
+    def dispatch(self, *args, **kwargs):
+        print('Este é o método dispatch')
+        return super().dispatch(*args, **kwargs)
+    
+    def get(self, *args, **kwargs):
+        print('Este é o método get')
+        author_id = self.kwargs.get('author_id')
+        user = User.objects.filter(pk=author_id).first()
+
+        if user is None:
+            raise Http404() # return redirect('blog:index')
+        
+        self._temp_context.update({
+            'author_id': author_id,
+            'user': user
+        })
+        return super().get(*args, **kwargs)
+    
+    def get_queryset(self, *args, **kwargs):
+        print('Este é o método get_queryset')
+        qs = super().get_queryset(*args, **kwargs)
+        qs = qs.filter(created_by__pk=self._temp_context['user'].pk)
+        return qs
+    
+    def get_context_data(self, *args, **kwargs):
+        print('Este é o método get_context_data')
+
+        context =  super().get_context_data(*args, **kwargs)
+
+        # author_id = self.kwargs.get('author_id')
+        # user = User.objects.filter(pk=author_id).first()
+
+        # if user is None:
+        #     raise Http404()
+        
+        user = self._temp_context['user']
+        user_fullname = user.username
+
+        if user.first_name:
+            user_fullname = f'{user.first_name} {user.last_name}'
+        
+        page_title = f'Pots de {user_fullname} - '
+
+        context.update({
+            'page_title': page_title
+        })
+        return context
+    
+    def get_context_object_name(self, *args, **kwargs):
+        print('Este é o método get_context_object_name')
+        return super().get_context_object_name(*args, **kwargs)
+    
+    def render_to_response(self, *args, **kwargs):
+        print('Este é o método render_to_response')
+        return super().render_to_response(*args, **kwargs)
+    
+    def get_template_names(self, *args, **kwargs):
+        print('Este é o método get_template_names')
+        return super().get_template_names(*args, **kwargs)
+    
+    def http_method_not_allowed(self, *args, **kwargs):
+        print('Este é o método http_method_not_allowed')
+        return super().http_method_not_allowed(*args, **kwargs)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
 def created_by(request, author_id):
     # posts = Post.objects \
     #     .filter(is_published=True) \
