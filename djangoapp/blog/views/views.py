@@ -133,49 +133,24 @@ class CreatedByListView(PostListView):
         return super().http_method_not_allowed(*args, **kwargs)
     
     
+class CategoryListView(PostListView):
+    def get_queryset(self) -> QuerySet[Any]:
+        self.allow_empty = False # Levanta um erro 404, se estiver vazio
+        qs = super().get_queryset()
+        return qs.filter(category__slug=self.kwargs.get('category_slug'))
     
-    
-    
-    
-    
-    
-    
-    
+    def get_context_data(self, *args, **kwargs):
+        context =  super().get_context_data(*args, **kwargs)
+        object_list = context['object_list']
+        page_title = f'Categoria: {object_list[0].category.name} - '
 
-def created_by(request, author_id):
-    # posts = Post.objects \
-    #     .filter(is_published=True) \
-    #     .order_by('-pk')
-    user = User.objects.filter(pk=author_id).first()
-
-    if user is None:
-        raise Http404()
+        context.update({
+            'page_title': page_title
+        })
+        return context
     
-    posts = Post.objects.get_published() \
-        .filter(created_by__pk=author_id)
     
-    user_fullname = user.username
-
-    if user.first_name:
-        user_fullname = f'{user.first_name} {user.last_name}'
     
-    paginator = Paginator(posts, PER_PAGE)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    page_title = f'Pots de {user_fullname} - '
-
-    context = {
-        'page_obj': page_obj,
-        'page_title': page_title
-    }
-
-    return render(
-        request,
-        'blog/pages/index.html',
-        context
-    )
-
 
 def category(request, category_slug):
     # posts = Post.objects \
