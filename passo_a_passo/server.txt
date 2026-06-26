@@ -1,0 +1,39 @@
+Crie as pastas no servidor e segue as orientações:
+blogapp e blorepo
+
+ajuste o dotenv_files
+    DEBUG="0"
+    POSTGRES_HOST="localhost"
+
+python -m venv venv
+. venv/bin/activate
+pip install --upgrade pip
+pip install gunicorn
+pip install -r djangoapp/requirements.txt
+
+python manage.py runserver # ver se está ok
+
+python manage.py makemigrations
+python manage.py migrate
+python manage.py collectstatic
+python manage.py runserver # testar novamente
+
+gunicorn acrescentar: djangoapp em WorkingDirectory=/home/aislan.penha/blogapp/djangoapp
+ngnix lembrar que a pastar static está no  /home/aislan.penha/blogapp/data/web/static
+ngnix lembrar que a pastar media está no  /home/aislan.penha/blogapp/data/web/media
+
+  # ATTENTION: blog
+  location / {
+    proxy_pass http://unix:/run/blog.socket;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_cache_bypass $http_upgrade;
+  }
+
+remove o link simbolico do sites-enable e crie um novo link
+sudo ln -s /etc/nginx/sites-available/blogip /etc/nginx/sites-enabled/blogip
+
+sudo systemctl restart nginx

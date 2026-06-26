@@ -6,7 +6,7 @@ SECRET_KEY="\1X,b6UHXxqEUG_.Q.],.=WS@|9E6bOeN&uj&ia{5_s.n^l%YQEs2CGJYjS:!,O"
 DEBUG="1"
 
 # Comma Separated values
-ALLOWED_HOSTS="127.0.0.1, localhost, 0.0.0.0"
+ALLOWED_HOSTS="127.0.0.1, localhost, 0.0.0.0, acrescenta do servidor"
 
 DB_ENGINE="django.db.backends.postgresql"
 POSTGRES_DB="blog_base_de_dados"
