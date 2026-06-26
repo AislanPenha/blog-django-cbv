@@ -10,7 +10,7 @@ from blog.models import Post, Page, Tag
 from django.db.models import Q
 from django.contrib.auth.models import User
 from django.http import Http404, HttpRequest
-from django.views.generic import ListView
+from django.views.generic import ListView, DetailView
 
 PER_PAGE = 9
 
@@ -202,47 +202,39 @@ class SearchListView(PostListView):
         return super().get(request, *args, **kwargs)
 
 
-def page(request, slug):
-    page_obj = Page.objects \
-        .filter(is_published=True) \
-        .filter(slug=slug).first()
+class PageDetailView(DetailView):
+    model = Page
+    template_name = 'blog/pages/page.html'
+    slug_field = 'slug'
+    slug_url_kwarg = 'page_slug'
+    context_object_name = 'page'
 
-    if page_obj is None:
-        raise Http404()
+    def get_context_data(self, **kwargs):
+        context =  super().get_context_data(**kwargs)
+        page = context['page']
+        page_title = f'Página: {page.title} - '
+        context.update({
+            'page_title': page_title,
+        })
+        return context
     
-    page_title = f'Página: {page_obj.title} - '
-
-    context = {
-        'page': page_obj,
-        'page_title': page_title,
-    }
-    return render(
-        request,
-        'blog/pages/page.html',
-        context
-    )
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(is_published=True)
 
 
-def post(request, slug):
-    post_obj = Post.objects.get_published() \
-        .filter(slug=slug) \
-        .first()
-    
-    if post_obj is None:
-        raise Http404()
-    
-    page_title = f'Post: {post_obj.title} - '
+class PostDetailView(DetailView):
+    template_name = 'blog/pages/post.html'
+    slug_field = 'slug'
+    slug_url_kwarg = 'post_slug'
+    context_object_name = 'post'
+    queryset = Post.objects.get_published()
 
-    context = {
-        'post': post_obj,
-        'page_title': page_title,
-    }
-
-    return render(
-        request,
-        'blog/pages/post.html',
-        context
-    )
-
-
-        
+    def get_context_data(self, **kwargs):
+        context =  super().get_context_data(**kwargs)
+        post = context['post']
+        page_title = f'Post: {post.title} - '
+        context.update({
+            'page_title': page_title,
+        })
+        return context

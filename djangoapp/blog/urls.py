@@ -29,6 +29,13 @@ urlpatterns = [
         views.SearchListView.as_view(), 
         name='search'
     ),
-    path('post/<slug:slug>/', views.post, name='post'),
-    path('page/<slug:slug>/', views.page, name='page'),
+    path(
+        'page/<slug:page_slug>/', 
+        views.PageDetailView.as_view(), 
+        name='page'
+    ),
+    path(
+        'post/<slug:post_slug>/', 
+        views.PostDetailView.as_view(), 
+        name='post'),
 ]
