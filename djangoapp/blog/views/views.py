@@ -5,13 +5,11 @@
 from typing import Any
 
 from django.db.models.query import QuerySet
-from django.shortcuts import render, redirect
-from django.core.paginator import Paginator
-from blog.models import Post, Page
+from django.shortcuts import render, get_object_or_404, redirect
+from blog.models import Post, Page, Tag
 from django.db.models import Q
 from django.contrib.auth.models import User
 from django.http import Http404, HttpRequest
-
 from django.views.generic import ListView
 
 PER_PAGE = 9
@@ -28,7 +26,6 @@ class PostListView(ListView):
     paginate_by = PER_PAGE
     queryset = Post.objects.get_published() # faz o método abaixo
     # Se quiser sobrescrever a queryset
-    # def get_queryset(self):
     #     queryset = super().get_queryset()
     #     queryset = queryset.filter(is_published=True)
     #     return queryset
@@ -59,20 +56,20 @@ class PostListView(ListView):
         return context
 
 class CreatedByListView(PostListView):
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._temp_context: dict[str, Any] = {}
 
     # Ordem de processamento
-    def setup(self, *args, **kwargs):
+    def setup(self, request, *args, **kwargs):
         print('Este é o método setup')
-        return super().setup(*args, **kwargs)
+        return super().setup(request, *args, **kwargs)
     
-    def dispatch(self, *args, **kwargs):
+    def dispatch(self, request, *args, **kwargs):
         print('Este é o método dispatch')
-        return super().dispatch(*args, **kwargs)
-    
-    def get(self, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
         print('Este é o método get')
         author_id = self.kwargs.get('author_id')
         user = User.objects.filter(pk=author_id).first()
@@ -84,18 +81,18 @@ class CreatedByListView(PostListView):
             'author_id': author_id,
             'user': user
         })
-        return super().get(*args, **kwargs)
+        return super().get(request, *args, **kwargs)
     
-    def get_queryset(self, *args, **kwargs):
+    def get_queryset(self):
         print('Este é o método get_queryset')
-        qs = super().get_queryset(*args, **kwargs)
+        qs = super().get_queryset()
         qs = qs.filter(created_by__pk=self._temp_context['user'].pk)
         return qs
     
-    def get_context_data(self, *args, **kwargs):
+    def get_context_data(self, **kwargs):
         print('Este é o método get_context_data')
 
-        context =  super().get_context_data(*args, **kwargs)
+        context =  super().get_context_data(**kwargs)
 
         # author_id = self.kwargs.get('author_id')
         # user = User.objects.filter(pk=author_id).first()
@@ -116,31 +113,31 @@ class CreatedByListView(PostListView):
         })
         return context
     
-    def get_context_object_name(self, *args, **kwargs):
+    def get_context_object_name(self, object_list):
         print('Este é o método get_context_object_name')
-        return super().get_context_object_name(*args, **kwargs)
+        return super().get_context_object_name(object_list)
     
-    def render_to_response(self, *args, **kwargs):
+    def render_to_response(self, context, **response_kwargs):
         print('Este é o método render_to_response')
-        return super().render_to_response(*args, **kwargs)
+        return super().render_to_response(context, **response_kwargs)
     
-    def get_template_names(self, *args, **kwargs):
+    def get_template_names(self):
         print('Este é o método get_template_names')
-        return super().get_template_names(*args, **kwargs)
+        return super().get_template_names()
     
-    def http_method_not_allowed(self, *args, **kwargs):
+    def http_method_not_allowed(self, request, *args, **kwargs):
         print('Este é o método http_method_not_allowed')
-        return super().http_method_not_allowed(*args, **kwargs)
+        return super().http_method_not_allowed(request, *args, **kwargs)
     
     
 class CategoryListView(PostListView):
-    def get_queryset(self) -> QuerySet[Any]:
+    def get_queryset(self):
         self.allow_empty = False # Levanta um erro 404, se estiver vazio
         qs = super().get_queryset()
         return qs.filter(category__slug=self.kwargs.get('category_slug'))
     
-    def get_context_data(self, *args, **kwargs):
-        context =  super().get_context_data(*args, **kwargs)
+    def get_context_data(self, **kwargs):
+        context =  super().get_context_data(**kwargs)
         object_list = context['object_list']
         page_title = f'Categoria: {object_list[0].category.name} - '
 
@@ -150,84 +147,59 @@ class CategoryListView(PostListView):
         return context
     
     
-    
+class TagListView(PostListView):
+    def get_queryset(self):
+        self.allow_empty = False # Levanta um erro 404, se estiver vazio
+        qs = super().get_queryset()
+        return qs.filter(tags__slug=self.kwargs.get('tag_slug'))
 
-def category(request, category_slug):
-    # posts = Post.objects \
-    #     .filter(is_published=True) \
-    #     .order_by('-pk')
-    posts = Post.objects.get_published() \
-        .filter(category__slug=category_slug)
-    
-    paginator = Paginator(posts, PER_PAGE)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    if len(page_obj) == 0:
-        raise Http404()
-    
-    page_title = f'Categoria: {page_obj[0].category.name} - '
-    context = {
-        'page_obj': page_obj,
-        'page_title': page_title
-    }
-    return render(
-        request,
-        'blog/pages/index.html',
-        context
-    )
+    def get_context_data(self, **kwargs):
+        context =  super().get_context_data(**kwargs)
+        tag = get_object_or_404(
+            Tag,
+            slug=self.kwargs.get('tag_slug')
+        )
+  
+        page_title = f'Tag: {tag.name} - '
+        context.update({
+            'page_title': page_title
+        })
+        return context
 
 
-def tag(request, tag_slug):
-    # posts = Post.objects \
-    #     .filter(is_published=True) \
-    #     .order_by('-pk')
-    posts = Post.objects.get_published() \
-        .filter(tags__slug=tag_slug)
+class SearchListView(PostListView):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._search_value = ''
 
-    paginator = Paginator(posts, PER_PAGE)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    if len(page_obj) == 0:
-        raise Http404()
-    
-    page_title = f'Tag: {page_obj[0].tags.first().name} - '
-    context = {
-        'page_obj': page_obj,
-        'page_title': page_title
-    }
+    def setup(self, request, *args, **kwargs):
+        self._search_value = request.GET.get('search', '').strip()
+        print(self._search_value)
+        return super().setup(request, *args, **kwargs)
 
-    return render(
-        request,
-        'blog/pages/index.html',
-        context
-    )
-
-
-def search(request):
-
-    search_value = request.GET.get('search', '').strip()
-
-    posts = Post.objects.get_published() \
-        .filter(
+    def get_queryset(self):
+        search_value = self._search_value
+        qs = super().get_queryset()
+        return qs.filter(
             Q(title__icontains=search_value) |
             Q(excerpt__icontains=search_value) |
             Q(content__icontains=search_value)
         )[:PER_PAGE]
     
-    page_title = f'Search: {search_value[:20]} - '
-
-    context = {
-        'page_obj': posts,
-        'search_value': search_value,
-        'page_title': page_title,
-    }
-    return render(
-        request,
-        'blog/pages/index.html',
-        context
-    )
+    def get_context_data(self, **kwargs):
+        context =  super().get_context_data(**kwargs)
+        search_value = self._search_value
+        page_title = f'Search: {search_value[:20]} - '
+        context.update({
+            'search_value': search_value,
+            'page_title': page_title,
+        })
+        return context
+    
+    def get(self, request, *args, **kwargs):
+        if self._search_value == '':
+            return redirect('blog:index')
+        return super().get(request, *args, **kwargs)
 
 
 def page(request, slug):
