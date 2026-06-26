@@ -20,6 +20,8 @@ docker volume ls # lista volume
 
 
 docker compose up --build # sempre que inciar o docker
+docker compose up --build --remove-orphans --renew-anon-volumes --force-recreate
+docker compose up
 docker rm -f __nome_do_docker__
 docker system prune -a
 docker compose down -v
@@ -34,5 +36,8 @@ docker compose run --rm djangoapp ___comando__python -V
 docker compose run --rm djangoapp /bin/sh -c 'echo $PATH $ALLOWED_HOSTS'
 
 docker exec -it djangoapp /bin/sh
+
+# PARA RESETAR O LOGIN
+docker compose run --rm djangoapp python manage.py axes_reset
 
 
